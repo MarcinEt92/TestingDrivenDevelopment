@@ -1,0 +1,8 @@
+TestingDrivenDevelopment/Scripts/
+TestingDrivenDevelopment/.idea
+TestingDrivenDevelopment/ChromeWebDriver/*
+TestingDrivenDevelopment/superlists/superlists/__pycache__/
+TestingDrivenDevelopment/superlists/lists/__pycache__/
+__pycache__
+.pyc
+db.sqlite3
