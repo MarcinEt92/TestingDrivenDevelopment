@@ -8,7 +8,7 @@ from django.test import TestCase
 from django.urls import resolve
 
 from .models import Item
-from .views import home_page
+from .views import home_page, view_list
 import re
 
 
@@ -50,7 +50,7 @@ class SmokeTest(TestCase):
         home_page(request)
 
         request.method = "GET"
-        response = home_page(request)
+        response = view_list(request)
         self.assertIn(to_do_item_one, response.content.decode())
 
     def test_home_page_can_save_post_request_and_update_database(self):
@@ -69,7 +69,7 @@ class SmokeTest(TestCase):
         request.POST["new_item"] = to_do_item_one
         response = home_page(request)
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.get("location"), "/")
+        self.assertEqual(response.get("location"), "/lists/the-only-list-in-the-world/")
 
     def test_home_page_returns_correct_html_after_post(self):
         request = HttpRequest()
@@ -92,7 +92,7 @@ class SmokeTest(TestCase):
 
         request = HttpRequest()
         request.method = "GET"
-        response = home_page(request)
+        response = view_list(request)
 
         for item in self.items_list:
             self.assertIn(item, response.content.decode())
@@ -112,6 +112,24 @@ class ItemModelTest(TestCase):
         self.assertEqual(saved_items.count(), len(items_list))
         for i in range(0, len(items_list)):
             self.assertEqual(saved_items[i].text, items_list[i])
+
+
+class ListViewTest(TestCase):
+    def test_displays_all_items(self):
+        item_1 = "Item 1"
+        item_2 = "Item 2"
+        Item.objects.create(text=item_1)
+        Item.objects.create(text=item_2)
+
+        response = self.client.get('/lists/the-only-list-in-the-world/')
+
+        self.assertContains(response, item_1)
+        self.assertContains(response, item_2)
+
+    def test_uses_list_template(self):
+        response = self.client.get("/lists/the-only-list-in-the-world/")
+        list_template_name = "list.html"
+        self.assertTemplateUsed(response, list_template_name)
 
 
 if __name__ == '__main__':
