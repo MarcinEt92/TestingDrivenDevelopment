@@ -5,10 +5,16 @@
     <title>To do list</title>
 </head>
 <body>
-    <h1>Create Your Own Lists</h1>
-    <form method="post" action="">
+    <h1>Lists</h1>
+    <form method="post" action="/">
         {% csrf_token %}
         <input id="id_new_item" name="new_item" placeholder="Write thing to do">
     </form>
+
+    <table id="id_list_table">
+        {% for item in items %}
+            <tr><td>{{ forloop.counter }}. {{ item.text }}</td></tr>
+        {% endfor %}
+    </table>
 </body>
 </html>
