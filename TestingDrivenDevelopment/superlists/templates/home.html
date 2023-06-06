@@ -6,7 +6,7 @@
 </head>
 <body>
     <h1>Create Your Own Lists</h1>
-    <form method="post" action="">
+    <form method="post" action="/lists/new">
         {% csrf_token %}
         <input id="id_new_item" name="new_item" placeholder="Write thing to do">
     </form>
