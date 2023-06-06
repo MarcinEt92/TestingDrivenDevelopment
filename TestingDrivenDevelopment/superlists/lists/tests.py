@@ -7,7 +7,7 @@ from django.test import TestCase
 # Create your tests here.
 from django.urls import resolve
 
-from .models import Item
+from .models import Item, List
 from .views import home_page, view_list
 import re
 
@@ -130,6 +130,54 @@ class ListViewTest(TestCase):
         response = self.client.get("/lists/the-only-list-in-the-world/")
         list_template_name = "list.html"
         self.assertTemplateUsed(response, list_template_name)
+
+
+class NewListTest(TestCase):
+    def test_save_post_request(self):
+        self.client.post(
+            path="/lists/new",
+            data={"new_item": SmokeTest.items_list[0]}
+        )
+        new_item = Item.objects.first()
+        self.assertEqual(new_item.text, SmokeTest.items_list[0])
+        self.assertEqual(Item.objects.count(), 1)
+
+    def test_redirects_after_post(self):
+        response = self.client.post(
+            path="/lists/new",
+            data={"new_item": SmokeTest.items_list[0]}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['location'], '/lists/the-only-list-in-the-world/')
+
+
+class ListAndItemModelsTest(TestCase):
+    def test_save_and_retrieve_items(self):
+        to_do_list = List()
+        to_do_list.save()
+
+        first_item = Item()
+        first_item.text = "1st element"
+        first_item.list = to_do_list
+        first_item.save()
+
+        second_item = Item()
+        second_item.text = "2nd element"
+        second_item.list = to_do_list
+        second_item.save()
+
+        saved_list = List.objects.first()
+        self.assertEqual(saved_list, to_do_list)
+
+        saved_items = Item.objects.all()
+        self.assertEqual(saved_items.count(), 2)
+
+        fist_saved_item = saved_items[0]
+        second_saved_item = saved_items[1]
+        self.assertEqual(fist_saved_item.text, "1st element")
+        self.assertEqual(fist_saved_item.list, to_do_list)
+        self.assertEqual(second_saved_item.text, "2nd element")
+        self.assertEqual(second_saved_item.list, to_do_list)
 
 
 if __name__ == '__main__':
