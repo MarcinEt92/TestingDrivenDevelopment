@@ -8,7 +8,7 @@ from django.test import TestCase
 from django.urls import resolve
 
 from .models import Item, List
-from .views import home_page, view_list
+from .views import home_page, view_list, new_list, add_item
 import re
 
 
@@ -41,24 +41,22 @@ class SmokeTest(TestCase):
         home_page(request)
         self.assertEqual(Item.objects.count(), 0)
 
-    # test not valid after redirect
-    def test_home_page_can_render_item_from_post_request(self):
+    def test_new_list_view_can_render_item_from_post_request(self):
         to_do_item_one = self.items_list[0]
         request = HttpRequest()
         request.method = "POST"
         request.POST["new_item"] = to_do_item_one
-        home_page(request)
-
+        new_list(request)
         request.method = "GET"
-        response = view_list(request)
+        response = view_list(request, 1)
         self.assertIn(to_do_item_one, response.content.decode())
 
-    def test_home_page_can_save_post_request_and_update_database(self):
+    def test_new_list_view_can_save_post_request_and_update_database(self):
         to_do_item_one = self.items_list[0]
         request = HttpRequest()
         request.method = "POST"
         request.POST["new_item"] = to_do_item_one
-        home_page(request)
+        new_list(request)
         self.assertEqual(Item.objects.first().text, to_do_item_one)
         self.assertEqual(Item.objects.count(), 1)
 
@@ -67,32 +65,42 @@ class SmokeTest(TestCase):
         request = HttpRequest()
         request.method = "POST"
         request.POST["new_item"] = to_do_item_one
-        response = home_page(request)
+        response = new_list(request)
+        created_list = List.objects.first()
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.get("location"), "/lists/the-only-list-in-the-world/")
+        self.assertEqual(response.get("location"), f"/lists/{created_list.id}/")
 
-    def test_home_page_returns_correct_html_after_post(self):
+    def test_new_list_view_returns_correct_html_after_post(self):
+        # create new list
         request = HttpRequest()
-        for item in self.items_list:
+        request.method = "POST"
+        request.POST["new_item"] = self.items_list[0]
+        new_list(request)
+
+        created_list = List.objects.first()
+
+        # add items to created list
+        for item in self.items_list[1:]:
             request.method = "POST"
             request.POST["new_item"] = item
-            home_page(request)
+            add_item(request, created_list.id)
 
         request.method = "GET"
-        response = home_page(request)
+        response = view_list(request, created_list.id)
         regex_pattern = '<input type="hidden".*>'
         response_no_hidden_input = re.sub(regex_pattern, repl="", string=response.content.decode())
-        context = {"items": Item.objects.all()}
-        expected_html = render_to_string("home.html", context)
+        context = {"items": Item.objects.all(), "to_do_list": created_list}
+        expected_html = render_to_string("list.html", context)
         self.assertEqual(response_no_hidden_input, expected_html)
 
-    def test_home_page_displays_more_than_one_item(self):
+    def test_view_list_view_displays_more_than_one_item(self):
+        to_do_list = List.objects.create()
         for item in self.items_list:
-            Item.objects.create(text=item)
+            Item.objects.create(text=item, list=to_do_list)
 
         request = HttpRequest()
         request.method = "GET"
-        response = view_list(request)
+        response = view_list(request, to_do_list.id)
 
         for item in self.items_list:
             self.assertIn(item, response.content.decode())
@@ -100,12 +108,13 @@ class SmokeTest(TestCase):
 
 class ItemModelTest(TestCase):
     def test_saving_and_retrieving_items(self):
+        to_do_list = List.objects.create()
         items_list = [
             "Absolutely first element from the list",
             "Second element from the list"
         ]
         for item in items_list:
-            Item.objects.create(text=item)
+            Item.objects.create(text=item, list=to_do_list)
 
         saved_items = Item.objects.all()
 
@@ -116,20 +125,38 @@ class ItemModelTest(TestCase):
 
 class ListViewTest(TestCase):
     def test_displays_all_items(self):
+        to_do_list = List.objects.create()
         item_1 = "Item 1"
         item_2 = "Item 2"
-        Item.objects.create(text=item_1)
-        Item.objects.create(text=item_2)
+        Item.objects.create(text=item_1, list=to_do_list)
+        Item.objects.create(text=item_2, list=to_do_list)
 
-        response = self.client.get('/lists/the-only-list-in-the-world/')
+        response = self.client.get(f'/lists/{to_do_list.id}/')
 
         self.assertContains(response, item_1)
         self.assertContains(response, item_2)
 
     def test_uses_list_template(self):
-        response = self.client.get("/lists/the-only-list-in-the-world/")
+        list_created = List.objects.create()
+        response = self.client.get(f"/lists/{list_created.id}/")
         list_template_name = "list.html"
         self.assertTemplateUsed(response, list_template_name)
+
+    def test_displays_only_items_for_that_list(self):
+        to_do_list = List.objects.create()
+        Item.objects.create(text=SmokeTest.items_list[0], list=to_do_list)
+        Item.objects.create(text=SmokeTest.items_list[1], list=to_do_list)
+        other_to_do_list = List.objects.create()
+        other_item_1, other_item_2 = "Item 1", "Item 2"
+        Item.objects.create(text=other_item_1, list=other_to_do_list)
+        Item.objects.create(text=other_item_2, list=other_to_do_list)
+
+        response = self.client.get(f"/lists/{to_do_list.id}/")
+
+        self.assertContains(response, SmokeTest.items_list[0])
+        self.assertContains(response, SmokeTest.items_list[1])
+        self.assertNotContains(response, other_item_1)
+        self.assertNotContains(response, other_item_2)
 
 
 class NewListTest(TestCase):
@@ -148,7 +175,7 @@ class NewListTest(TestCase):
             data={"new_item": SmokeTest.items_list[0]}
         )
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response['location'], '/lists/the-only-list-in-the-world/')
+        self.assertEqual(response['location'], '/lists/1/')
 
 
 class ListAndItemModelsTest(TestCase):
