@@ -6,7 +6,7 @@
 </head>
 <body>
     <h1>Lists</h1>
-    <form method="post" action="/lists/new">
+    <form method="post" action="/lists/{{ to_do_list.id }}/add_item">
         {% csrf_token %}
         <input id="id_new_item" name="new_item" placeholder="Write thing to do">
     </form>

@@ -14,7 +14,7 @@ class FunctionalTests(unittest.TestCase):
 
     def set_up_new_session_headless_mode(self):
         options = Options()
-        options.headless = False
+        options.headless = True
         service = Service(executable_path=self.CHROME_DRIVER_PATH)
         self.browser = webdriver.Chrome(service=service, options=options)
         self.browser.implicitly_wait(self.WEB_WAIT_TIME_IN_SEC)
@@ -97,10 +97,10 @@ class FunctionalTests(unittest.TestCase):
 
         # check if there is new user url and no trace from previous user
         second_user_list_url = self.browser.current_url
-        page_content_text = self.browser.find_element(by='xpath', value='//input[@id="id_new_item"]')
+        page_content_text = self.browser.find_element(by='xpath', value='//body').text
         self.assertRegex(second_user_list_url, "/lists/.+")
         self.assertNotEqual(first_user_list_url, second_user_list_url)
-        self.assertIn(page_content_text, additional_item_to_do)
+        self.assertIn(additional_item_to_do, page_content_text)
         self.assertNotIn(page_content_text, SampleToDoList.get_items_list()[0])
 
     # test_ability_to_write_list
