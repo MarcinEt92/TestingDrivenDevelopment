@@ -6,3 +6,4 @@ TestingDrivenDevelopment/superlists/lists/__pycache__/
 __pycache__
 .pyc
 db.sqlite3
+TestingDrivenDevelopment/superlists/lists/static/bootstrap/*

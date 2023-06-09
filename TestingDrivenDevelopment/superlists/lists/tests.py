@@ -176,6 +176,7 @@ class NewListTest(TestCase):
         )
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response['location'], '/lists/1/')
+        self.assertRedirects(response, '/lists/1/')
 
 
 class ListAndItemModelsTest(TestCase):
@@ -205,6 +206,31 @@ class ListAndItemModelsTest(TestCase):
         self.assertEqual(fist_saved_item.list, to_do_list)
         self.assertEqual(second_saved_item.text, "2nd element")
         self.assertEqual(second_saved_item.list, to_do_list)
+
+
+class NewItemTest(TestCase):
+    def test_can_save_a_post_request_to_an_existing_list(self):
+        to_do_list = List.objects.create()
+        to_do_list_text = "New element for existing list"
+
+        self.client.post(
+            path=f"/lists/{to_do_list.id}/add_item",
+            data={"new_item": to_do_list_text}
+        )
+
+        new_item = Item.objects.first()
+        self.assertEqual(Item.objects.count(), 1)
+        self.assertEqual(new_item.text, to_do_list_text)
+        self.assertEqual(new_item.list, to_do_list)
+
+    def test_redirects_to_list_view(self):
+        to_do_list = List.objects.create()
+        to_do_list_text = "New element for existing list"
+        response = self.client.post(
+            path=f"/lists/{to_do_list.id}/add_item",
+            data={"new_item": to_do_list_text}
+        )
+        self.assertRedirects(response, f"/lists/{to_do_list.id}/")
 
 
 if __name__ == '__main__':
