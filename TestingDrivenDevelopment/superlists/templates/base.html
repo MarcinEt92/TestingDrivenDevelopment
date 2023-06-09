@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>To do list</title>
+    <link href="../lists/static/bootstrap/css/bootstrap.min.css">
+    <script src="../lists/static/bootstrap/js/bootstrap.min.js" defer></script>
+</head>
+<body>
+    <h1>{% block header_text %} {% endblock %}</h1>
+    <form method="post" action="{% block form_action %} {% endblock %}">
+        {% csrf_token %}
+        <p style="text-align: center;">
+            <input id="id_new_item" name="new_item" placeholder="Write thing to do">
+        </p>
+    </form>
+    {% block table %}
+    {% endblock %}
+</body>
+</html>

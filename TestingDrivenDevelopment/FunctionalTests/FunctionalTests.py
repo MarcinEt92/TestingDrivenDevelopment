@@ -1,9 +1,11 @@
-from django.test import LiveServerTestCase
+import unittest
+
 from selenium import webdriver
 from selenium.webdriver import Keys
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
-import unittest
+from selenium.webdriver.common.by import By
+
 from test_data.SampleToDoList import SampleToDoList
 
 
@@ -21,7 +23,7 @@ class FunctionalTests(unittest.TestCase):
 
     def setUp(self):
         options = Options()
-        options.headless = True
+        options.headless = False
         service = Service(executable_path=self.CHROME_DRIVER_PATH)
         self.browser = webdriver.Chrome(service=service, options=options)
         self.browser.implicitly_wait(self.WEB_WAIT_TIME_IN_SEC)
@@ -31,10 +33,8 @@ class FunctionalTests(unittest.TestCase):
 
     def test_main_webpage_title(self):
         expected_web_title = "To do list"
-        self.browser.get(self.MAIN_PAGE_ADDRESS)  # for unittest.TestCase
-        # self.browser.get(self.live_server_url)
+        self.browser.get(self.MAIN_PAGE_ADDRESS)
         self.assertIn(expected_web_title, self.browser.title)
-        # self.fail("End of test execution")
 
     def test_main_webpage_content(self):
         expected_header_title = "Lists"
@@ -102,6 +102,22 @@ class FunctionalTests(unittest.TestCase):
         self.assertNotEqual(first_user_list_url, second_user_list_url)
         self.assertIn(additional_item_to_do, page_content_text)
         self.assertNotIn(page_content_text, SampleToDoList.get_items_list()[0])
+
+    def test_layout_and_styling(self):
+        self.browser.get(self.MAIN_PAGE_ADDRESS)
+        window_width, window_height = 1024, 768
+        self.browser.set_window_size(window_width, window_height)
+
+        input_box = self.browser.find_element(By.ID, value="id_new_item")
+        # input_box.send_keys("testing\n")
+
+        print(f"MK Location: {input_box.location}")
+        # check if input box is centered
+        self.assertAlmostEqual(
+            input_box.location["x"] + input_box.size["width"] / 2,
+            window_width / 2,
+            delta=7
+        )
 
     # test_ability_to_write_list
     # check_website_update_after_submitting_items
